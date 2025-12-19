@@ -56,7 +56,7 @@ console_box_bg.SetPosition(console_box_offset_x, console_box_offset_y);
 console_box_bg.SetZ(1);
 
 // Gradient overlay
-fade_scaled = Image("fade02.png").Scale(console_box_width, screen.h);
+fade_scaled = Image("fade.png").Scale(console_box_width, screen.h);
 console_gradient = Sprite(fade_scaled);
 console_gradient.SetPosition(console_box_offset_x, 0);
 console_gradient.SetZ(3);
