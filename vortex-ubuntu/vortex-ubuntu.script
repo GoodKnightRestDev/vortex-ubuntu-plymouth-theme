@@ -1,40 +1,21 @@
-/* -*- mode: js -*- */
-/*
- * vortex-ubuntu.script - Plymouth theme script
- * This file uses Plymouth's scripting language (similar to JavaScript/C)
- *
- * Configuration
- */
-
+// Configuration
 logo_spin = -0.009;
 
-/*
- * Screen dimensions
- */
-
-// Screen size
+// Screen dimensions
 screen.w = Window.GetWidth(0);
 screen.h = Window.GetHeight(0);
 screen.half.w = screen.w / 2;
 screen.half.h = screen.h / 2;
 
-/*
- * Background
- */
+// Background
 
 Window.SetBackgroundTopColor(0, 0, 0);
 Window.SetBackgroundBottomColor(0, 0, 0);
 bg = Sprite(Image("bg.png").Scale(screen.w, screen.h));
 bg.SetZ(0);
 
-/*
- * Global state
- */
-
-// Message
+// Global state
 message = null;
-
-// Question and password prompts
 prompt = null;
 response = null;
 bullet.image = Image("dot.png").Scale(10, 10);
@@ -53,27 +34,16 @@ console_box_padding = 10;
 console_max_lines = Math.Int(screen.h / 21) - 2;
 console_line_height = 21;
 
-// Flow
 time_counter = 0.0;
-
-// Stop animation flag
 stop_animation = 0;
 
-/*
- * Console output box
- */
-
-// Create semi-transparent background box for console with horizontal fade
-// Create image with fade from left (opaque) to right (transparent) at 50% screen width
+// Console background with horizontal fade
 box_image = Image(console_box_width, console_box_height);
 for (x = 0; x < console_box_width; x++) {
-  // Calculate absolute screen position
   screen_x = console_box_offset_x + x;
   if (screen_x < screen.w / 2) {
-    // Left half: fully opaque
     opacity = 0.85;
   } else {
-    // Right half: fade from 0.85 to 0
     fade_progress = (screen_x - screen.w / 2) / (screen.w / 2);
     opacity = 0.85 * (1 - fade_progress);
   }
@@ -85,28 +55,23 @@ console_box_bg = Sprite(box_image);
 console_box_bg.SetPosition(console_box_offset_x, console_box_offset_y);
 console_box_bg.SetZ(1);
 
-// Load gradient fade image
-fade_image = Image("fade02.png");
-// Scale to full screen height to ensure it covers all scrolling text
-fade_scaled = fade_image.Scale(console_box_width, screen.h);
+// Gradient overlay
+fade_scaled = Image("fade02.png").Scale(console_box_width, screen.h);
 console_gradient = Sprite(fade_scaled);
 console_gradient.SetPosition(console_box_offset_x, 0);
 console_gradient.SetZ(3);
 
-// Initialize console lines array (just 1 sprite per line for now)
 for (i = 0; i < console_max_lines; i++) {
   console_lines[i] = null;
 }
 
 fun update_console_display() {
-  // Clear old sprites
   for (i = 0; i < console_max_lines; i++) {
     if (console_lines[i] != null) {
       console_lines[i] = null;
     }
   }
 
-  // Display new lines - simple test with full opacity
   for (i = 0; i < console_max_lines; i++) {
     line_index = global.console_messages[i];
     if (line_index != null) {
@@ -121,25 +86,18 @@ fun update_console_display() {
   }
 }
 
-// Initialize message buffer
 for (i = 0; i < console_max_lines; i++) {
   global.console_messages[i] = null;
 }
 
 fun add_console_message(text) {
-  // Shift messages down
   for (i = console_max_lines - 1; i > 0; i--) {
     global.console_messages[i] = global.console_messages[i - 1];
   }
-
-  // Add new message at top
   global.console_messages[0] = text;
-
-  // Update display
   update_console_display();
 }
 
-// Status update callback for boot messages
 fun status_update_callback(status) {
   if (status != "") {
     add_console_message(status);
@@ -147,9 +105,7 @@ fun status_update_callback(status) {
 }
 Plymouth.SetUpdateStatusFunction(status_update_callback);
 
-/*
- * Splash image
- */
+// Splash configuration
 
 splash_scale = 0.75;
 splash_y_position = 0.4;
@@ -212,9 +168,7 @@ fun update_splash_sprites() {
   }
 }
 
-/*
- * Callback functions
- */
+// Callbacks
 
 fun refresh_callback() {
   time_counter++;
@@ -222,7 +176,6 @@ fun refresh_callback() {
 }
 Plymouth.SetRefreshFunction(refresh_callback);
 
-// Progress bar
 if (Plymouth.GetMode() == "boot") {
   ipb = Image("pb.png");
   pb = Sprite(ipb);
@@ -237,13 +190,11 @@ if (Plymouth.GetMode() == "boot") {
 }
 
 fun display_prompt(prompt_text) {
-  // Clean up the prompt text by removing format specifiers like %s
   cleaned_text = "";
   i = 0;
   while (i < StringLength(prompt_text)) {
     c = StringGetCharAt(prompt_text, i);
     if (c == "%") {
-      // Skip % and the next character
       i = i + 2;
     } else {
       cleaned_text = cleaned_text + c;
@@ -251,7 +202,6 @@ fun display_prompt(prompt_text) {
     }
   }
 
-  // Remove common prefixes and extra spaces
   if (StringIndexOf(cleaned_text, "Begin") >= 0) {
     cleaned_text = "Enter passphrase to unlock disk";
   }
