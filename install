@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
@@ -10,9 +10,15 @@ themes_dir="/usr/share/plymouth/themes"
 theme_name="vortex-ubuntu"
 
 install() {
-    set -x
     if [ -d "${themes_dir}/${theme_name}" ]; then
-        uninstall
+        read -p "Theme already exists. Overwrite? [y/N] " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            rm -rf "${themes_dir}/${theme_name}"
+        else
+            echo "Installation aborted."
+            exit 1
+        fi
     fi
     cp -r "$(dirname "${0}")/${theme_name}" "${themes_dir}/"
     update-alternatives \
@@ -31,7 +37,6 @@ install() {
 }
 
 uninstall() {
-    set -x
     update-alternatives \
         --remove \
         default.plymouth \

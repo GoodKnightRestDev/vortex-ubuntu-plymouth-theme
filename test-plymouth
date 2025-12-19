@@ -27,11 +27,16 @@ if [ "${1}" = "prompt" ]; then
     plymouth ask-for-password --prompt="Enter a password"
     plymouth ask-question --command=cat --prompt="Say a few words"
 fi
-sleep 1
 plymouth display-message \
     --text="Sample status or error text for display to the user"
 
-for i in $(seq 1 10); do
-    plymouth --update="Reticulating splines ${i}"
-    sleep 1
+for i in $(seq 0 99); do
+    # Zero-pad numbers less than 10
+    if [ ${i} -lt 10 ]; then
+        padded_i="0${i}"
+    else
+        padded_i="${i}"
+    fi
+    plymouth --update="Reticulating splines ${padded_i} with some very long text to see the end of the line disappearing in the theme because we set a gradient on the middle..."
+    sleep 0.05
 done

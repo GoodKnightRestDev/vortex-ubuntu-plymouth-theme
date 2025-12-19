@@ -77,6 +77,21 @@ Plymouth theme in Ubuntu 22.04 is `bgrt`.
 
 # :wrench: Customization
 
+## Console output
+
+By default, the theme now displays boot console messages in a semi-transparent box at the bottom of the screen. This shows all the system startup actions in real-time, similar to a traditional text boot.
+
+To disable the console output box, edit `vortex-ubuntu/vortex-ubuntu.script` and comment out or remove the console box initialization section (lines 60-120) and the status update callback function.
+
+The console box can be customized by adjusting these variables near the top of the script:
+
+- `console_box_height` - Height of the console box in pixels (default: 200)
+- `console_box_padding` - Padding inside the box (default: 10)
+- `console_max_lines` - Maximum number of lines to display (default: 11)
+- `console_line_height` - Height of each line in pixels (default: 16)
+
+You can also adjust the box opacity by changing the value in `console_box_bg.SetOpacity(0.85)` (range: 0.0 to 1.0).
+
 ## Logo spin
 
 To disable the logo image spin, edit `vortex-ubuntu/vortex-ubuntu.script` and
@@ -101,14 +116,14 @@ See [`LICENSE`][license] for more information.
 
 # :copyright: Acknowledgments
 
--   [Inspiration for aesthetic &amp; style][atom]
--   [adi1090x/plymouth-themes][adi1090x-plymouth-themes] for prompt examples
+- [Inspiration for aesthetic &amp; style][atom]
+- [adi1090x/plymouth-themes][adi1090x-plymouth-themes] for prompt examples
 
 # :handshake: Contributions
 
--   Created by [@emanuele-scarsella](https://github.com/emanuele-scarsella)
--   Password prompt and code improvements by [@smkent](https://github.com/smkent)
--   Pausing animation during (password) prompt by [@nesono](https://github.com/nesono)
+- Created by [@emanuele-scarsella](https://github.com/emanuele-scarsella)
+- Password prompt and code improvements by [@smkent](https://github.com/smkent)
+- Pausing animation during (password) prompt by [@nesono](https://github.com/nesono)
 
 [adi1090x-plymouth-themes]: https://github.com/adi1090x/plymouth-themes
 [atom]: https://atom.io

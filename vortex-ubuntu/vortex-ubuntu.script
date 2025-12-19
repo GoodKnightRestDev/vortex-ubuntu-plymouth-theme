@@ -1,4 +1,8 @@
+/* -*- mode: js -*- */
 /*
+ * vortex-ubuntu.script - Plymouth theme script
+ * This file uses Plymouth's scripting language (similar to JavaScript/C)
+ *
  * Configuration
  */
 
@@ -21,7 +25,7 @@ screen.half.h = screen.h / 2;
 Window.SetBackgroundTopColor(0, 0, 0);
 Window.SetBackgroundBottomColor(0, 0, 0);
 bg = Sprite(Image("bg.png").Scale(screen.w, screen.h));
-bg.SetZ(-10);
+bg.SetZ(0);
 
 /*
  * Global state
@@ -40,11 +44,108 @@ prompt_y = screen.h * 0.75;
 response_y = prompt_y + text_line_height * 2;
 message_y = prompt_y + text_line_height * 4;
 
+// Console output box configuration
+console_box_offset_x = 30;
+console_box_offset_y = 30;
+console_box_width = screen.w - (console_box_offset_x * 2);
+console_box_height = screen.h - (console_box_offset_y * 2);
+console_box_padding = 10;
+console_max_lines = Math.Int(screen.h / 21) - 2;
+console_line_height = 21;
+
 // Flow
 time_counter = 0.0;
 
 // Stop animation flag
 stop_animation = 0;
+
+/*
+ * Console output box
+ */
+
+// Create semi-transparent background box for console with horizontal fade
+// Create image with fade from left (opaque) to right (transparent) at 50% screen width
+box_image = Image(console_box_width, console_box_height);
+for (x = 0; x < console_box_width; x++) {
+  // Calculate absolute screen position
+  screen_x = console_box_offset_x + x;
+  if (screen_x < screen.w / 2) {
+    // Left half: fully opaque
+    opacity = 0.85;
+  } else {
+    // Right half: fade from 0.85 to 0
+    fade_progress = (screen_x - screen.w / 2) / (screen.w / 2);
+    opacity = 0.85 * (1 - fade_progress);
+  }
+  for (y = 0; y < console_box_height; y++) {
+    box_image.SetPixel(x, y, 0, 0, 0, opacity);
+  }
+}
+console_box_bg = Sprite(box_image);
+console_box_bg.SetPosition(console_box_offset_x, console_box_offset_y);
+console_box_bg.SetZ(1);
+
+// Load gradient fade image
+fade_image = Image("fade02.png");
+// Scale to full screen height to ensure it covers all scrolling text
+fade_scaled = fade_image.Scale(console_box_width, screen.h);
+console_gradient = Sprite(fade_scaled);
+console_gradient.SetPosition(console_box_offset_x, 0);
+console_gradient.SetZ(3);
+
+// Initialize console lines array (just 1 sprite per line for now)
+for (i = 0; i < console_max_lines; i++) {
+  console_lines[i] = null;
+}
+
+fun update_console_display() {
+  // Clear old sprites
+  for (i = 0; i < console_max_lines; i++) {
+    if (console_lines[i] != null) {
+      console_lines[i] = null;
+    }
+  }
+
+  // Display new lines - simple test with full opacity
+  for (i = 0; i < console_max_lines; i++) {
+    line_index = global.console_messages[i];
+    if (line_index != null) {
+      line_image = Image.Text(line_index, 0.7, 1, 0.7, 1, "Monospace 10");
+      console_lines[i] = Sprite(line_image);
+      console_lines[i].SetPosition(console_box_offset_x + console_box_padding,
+                                   console_box_offset_y + console_box_padding +
+                                       (i * console_line_height));
+      console_lines[i].SetZ(2);
+      console_lines[i].SetOpacity(1.0);
+    }
+  }
+}
+
+// Initialize message buffer
+for (i = 0; i < console_max_lines; i++) {
+  global.console_messages[i] = null;
+}
+
+fun add_console_message(text) {
+  // Shift messages down
+  for (i = console_max_lines - 1; i > 0; i--) {
+    global.console_messages[i] = global.console_messages[i - 1];
+  }
+
+  // Add new message at top
+  global.console_messages[0] = text;
+
+  // Update display
+  update_console_display();
+}
+
+// Status update callback for boot messages
+fun status_update_callback(status) {
+  if (status != "") {
+    add_console_message(status);
+  }
+}
+Plymouth.SetUpdateStatusFunction(status_update_callback);
 
 /*
  * Splash image
@@ -53,54 +154,62 @@ stop_animation = 0;
 splash_scale = 0.75;
 splash_y_position = 0.4;
 if (Plymouth.GetMode() == "shutdown") {
-    splash_y_position = 0.5;
+  splash_y_position = 0.5;
 }
 
 fun make_splash_sprite_from_image(img) {
-    local.splash_sprite.image = img;
-    local.splash_sprite.sprite = make_splash_sprite_sprite(local.splash_sprite.image);
-    return local.splash_sprite;
+  local.splash_sprite.image = img;
+  local.splash_sprite.sprite =
+      make_splash_sprite_sprite(local.splash_sprite.image);
+  return local.splash_sprite;
 }
 
 fun make_splash_sprite_sprite(img) {
-    local.sprite = Sprite(local.img);
-    local.sprite.SetX(screen.half.w - local.img.GetWidth() / 2);
-    local.sprite.SetY((screen.h * splash_y_position) - local.img.GetHeight() / 2);
-    return local.sprite;
+  local.sprite = Sprite(local.img);
+  local.sprite.SetX(screen.half.w - local.img.GetWidth() / 2);
+  local.sprite.SetY((screen.h * splash_y_position) - local.img.GetHeight() / 2);
+  local.sprite.SetZ(20);
+  return local.sprite;
 }
 
 fun make_splash_sprite(fn) {
-    local.img = Image(local.fn);
-    local.splash_sprite.image = local.img.Scale(img.GetWidth() * splash_scale, local.img.GetHeight() * splash_scale);
-    local.splash_sprite.sprite = make_splash_sprite_sprite(local.splash_sprite.image);
-    return local.splash_sprite;
+  local.img = Image(local.fn);
+  local.splash_sprite.image = local.img.Scale(
+      img.GetWidth() * splash_scale, local.img.GetHeight() * splash_scale);
+  local.splash_sprite.sprite =
+      make_splash_sprite_sprite(local.splash_sprite.image);
+  return local.splash_sprite;
 }
 
-spins = [0.009, 0.007, 0.006, 0.0053, 0.0048, 0.004, 0.0035, 0.003, 0.0025, 0.002];
+spins = [
+  0.009, 0.007, 0.006, 0.0053, 0.0048, 0.004, 0.0035, 0.003, 0.0025, 0.002
+];
 spin_sprite_count = 10;
 
 logo_image = Image("logo.png").Scale(120 * splash_scale, 120 * splash_scale);
 logo_sprite = make_splash_sprite_from_image(logo_image);
 
 splash_static_bg_image = Image("static.png");
-splash_static_bg_image = splash_static_bg_image.Scale(splash_static_bg_image.GetWidth() * splash_scale * 0.3, splash_static_bg_image.GetHeight() * splash_scale * 0.3);
+splash_static_bg_image = splash_static_bg_image.Scale(
+    splash_static_bg_image.GetWidth() * splash_scale * 0.3,
+    splash_static_bg_image.GetHeight() * splash_scale * 0.3);
 splash_static_bg = make_splash_sprite_from_image(splash_static_bg_image);
 
 for (i = 0; i < spin_sprite_count; i++) {
-    splash_sprites[i] = make_splash_sprite((i + 1) + ".png");
+  splash_sprites[i] = make_splash_sprite((i + 1) + ".png");
 }
 
 fun rotate_splash_sprite(splash_sprite, rotation) {
-    splash_sprite.sprite.SetImage(splash_sprite.image.Rotate(rotation));
+  splash_sprite.sprite.SetImage(splash_sprite.image.Rotate(rotation));
 }
 
 fun update_splash_sprites() {
-    if (stop_animation == 0) {
-      rotate_splash_sprite(logo_sprite, time_counter * logo_spin);
-      for (i = 0; i < spin_sprite_count; i++) {
-          rotate_splash_sprite(splash_sprites[i], time_counter * spins[i]);
-      }
+  if (stop_animation == 0) {
+    rotate_splash_sprite(logo_sprite, time_counter * logo_spin);
+    for (i = 0; i < spin_sprite_count; i++) {
+      rotate_splash_sprite(splash_sprites[i], time_counter * spins[i]);
     }
+  }
 }
 
 /*
@@ -108,83 +217,112 @@ fun update_splash_sprites() {
  */
 
 fun refresh_callback() {
-    time_counter++;
-    update_splash_sprites();
+  time_counter++;
+  update_splash_sprites();
 }
 Plymouth.SetRefreshFunction(refresh_callback);
 
 // Progress bar
-if (Plymouth.GetMode () == "boot") {
-    ipb = Image("pb.png");
-    pb = Sprite(ipb);
-    pb.SetX(screen.half.w - 50);
-    pb.SetY(screen.h * 0.6 - ipb.GetHeight() / 2);
+if (Plymouth.GetMode() == "boot") {
+  ipb = Image("pb.png");
+  pb = Sprite(ipb);
+  pb.SetX(screen.half.w - 50);
+  pb.SetY(screen.h * 0.6 - ipb.GetHeight() / 2);
+  pb.SetZ(20);
 
-    fun boot_progress_callback(duration, progress) {
-         pb.SetImage(ipb.Scale(progress * 100, 3));
-    }
-    Plymouth.SetBootProgressFunction(boot_progress_callback);
+  fun boot_progress_callback(duration, progress) {
+    pb.SetImage(ipb.Scale(progress * 100, 3));
+  }
+  Plymouth.SetBootProgressFunction(boot_progress_callback);
 }
 
 fun display_prompt(prompt_text) {
-    prompt.image = Image.Text(prompt_text, 1, 1, 1);
-    prompt.sprite = Sprite(prompt.image);
-    prompt.sprite.SetX(screen.half.w - prompt.image.GetWidth() / 2);
-    prompt.sprite.SetY(prompt_y);
+  // Clean up the prompt text by removing format specifiers like %s
+  cleaned_text = "";
+  i = 0;
+  while (i < StringLength(prompt_text)) {
+    c = StringGetCharAt(prompt_text, i);
+    if (c == "%") {
+      // Skip % and the next character
+      i = i + 2;
+    } else {
+      cleaned_text = cleaned_text + c;
+      i = i + 1;
+    }
+  }
+
+  // Remove common prefixes and extra spaces
+  if (StringIndexOf(cleaned_text, "Begin") >= 0) {
+    cleaned_text = "Enter passphrase to unlock disk";
+  }
+
+  prompt.image = Image.Text(cleaned_text, 1, 1, 1);
+  prompt.sprite = Sprite(prompt.image);
+  prompt.sprite.SetX(screen.half.w - prompt.image.GetWidth() / 2);
+  prompt.sprite.SetY(prompt_y);
+  prompt.sprite.SetZ(20);
 }
 
 fun display_question_callback(prompt_text, entry) {
-    stop_animation = 1;
-    display_prompt(prompt_text);
+  stop_animation = 1;
+  display_prompt(prompt_text);
 
-    local.entry_config.alpha = 1.0;
-    local.entry_config.font = "Sans Bold 12";
-    if (entry == "") {
-        entry = "Type your response";
-        local.entry_config.alpha = 0.5;
-        local.entry_config.font = "Sans 12";
-    }
+  local.entry_config.alpha = 1.0;
+  local.entry_config.font = "Sans Bold 12";
+  if (entry == "") {
+    entry = "Type your response";
+    local.entry_config.alpha = 0.5;
+    local.entry_config.font = "Sans 12";
+  }
 
-    response = null;
-    response.image = Image.Text(entry, 1, 1, 1, local.entry_config.alpha, local.entry_config.font);
-    response.sprite = Sprite(response.image);
-    response.sprite.SetX(screen.half.w - response.image.GetWidth() / 2);
-    response.sprite.SetY(response_y);
+  response = null;
+  response.image = Image.Text(entry, 1, 1, 1, local.entry_config.alpha,
+                              local.entry_config.font);
+  response.sprite = Sprite(response.image);
+  response.sprite.SetX(screen.half.w - response.image.GetWidth() / 2);
+  response.sprite.SetY(response_y);
+  response.sprite.SetZ(20);
 }
 Plymouth.SetDisplayQuestionFunction(display_question_callback);
 
 fun display_password_callback(prompt_text, dot_count) {
-	stop_animation = 1;
-    display_prompt(prompt_text);
+  stop_animation = 0;
+  display_prompt(prompt_text);
 
-    response = null;
-    if (dot_count > 0) {
-        dot_start_position = screen.half.w - (dot_count * bullet.image.GetWidth()) / 2;
-        for (i = 0; i < dot_count; i++) {
-            response[i].sprite = Sprite(bullet.image);
-            response[i].sprite.SetX(dot_start_position + i * bullet.image.GetWidth());
-            response[i].sprite.SetY(response_y + (text_line_height - bullet.image.GetHeight()) / 2);
-        }
-    } else {
-        response.image = Image.Text("Enter passphrase", 1, 1, 1, 0.5);
-        response.sprite = Sprite(response.image);
-        response.sprite.SetX(screen.half.w - response.image.GetWidth() / 2);
-        response.sprite.SetY(response_y);
+  response = null;
+  if (dot_count > 0) {
+    dot_start_position =
+        screen.half.w - (dot_count * bullet.image.GetWidth()) / 2;
+    for (i = 0; i < dot_count; i++) {
+      response[i].sprite = Sprite(bullet.image);
+      response[i].sprite.SetX(dot_start_position + i * bullet.image.GetWidth());
+      response[i].sprite.SetY(
+          response_y + (text_line_height - bullet.image.GetHeight()) / 2);
+      response[i].sprite.SetZ(20);
     }
+  } else {
+    response.image = Image.Text("Enter passphrase", 1, 1, 1, 0.5);
+    response.sprite = Sprite(response.image);
+    response.sprite.SetX(screen.half.w - response.image.GetWidth() / 2);
+    response.sprite.SetY(response_y);
+    response.sprite.SetZ(20);
+  }
 }
 Plymouth.SetDisplayPasswordFunction(display_password_callback);
 
 fun display_normal_callback() {
-    prompt = null;
-    message = null;
-    response = null;
-	stop_animation = 0;
+  prompt = null;
+  message = null;
+  response = null;
+  stop_animation = 0;
 }
 Plymouth.SetDisplayNormalFunction(display_normal_callback);
 
 fun message_callback(text) {
-    message.image = Image.Text(text, 1, 1, 1, 0.75, "Sans 10");
-    message.sprite = Sprite(message.image);
-    message.sprite.SetPosition(screen.half.w - message.image.GetWidth() / 2, message_y);
+  message.image = Image.Text(text, 1, 1, 1, 0.75, "Sans 10");
+  message.sprite = Sprite(message.image);
+  message.sprite.SetPosition(screen.half.w - message.image.GetWidth() / 2,
+                             message_y);
+  message.sprite.SetZ(20);
 }
 Plymouth.SetMessageFunction(message_callback);
