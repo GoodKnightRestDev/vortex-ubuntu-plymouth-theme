@@ -1,0 +1,43 @@
+#!/bin/bash
+
+set -e
+
+if [ "$(id -u)" != "0" ]; then
+    exec sudo "${0}" "${@}"
+fi
+
+themes_dir="/usr/share/plymouth/themes"
+theme_name="vortex-console"
+
+uninstall() {
+    update-alternatives \
+        --remove \
+        default.plymouth \
+        "${themes_dir}/${theme_name}/${theme_name}.plymouth"
+    # Prompt user for a different theme
+    update-alternatives \
+        --config \
+        default.plymouth
+    update-initramfs -u
+    rm -rf "${themes_dir:?}/${theme_name:?}/"
+}
+
+usage() {
+    echo "Usage: ${0}" >&2
+    exit 1
+}
+
+if [ "${1}" = "-h" ] || [ "${1}" = "--help" ] || [ "${1}" = "help" ]; then
+    usage
+fi
+
+if [ ! -d "${themes_dir}" ]; then
+    echo "\"${themes_dir}\" directory does not exist" >&2
+    exit 1
+fi
+
+if [ -n "${1}" ]; then
+    usage
+fi
+
+uninstall

@@ -1,17 +1,16 @@
-<h1 align="center">Vortex Ubuntu boot splash theme</h1>
-<p align="center">
-	<img src=images/vortex-ubuntu.png? >
-</p>
-<p align="center">
-	<a href="https://www.gnome-look.org/p/1462682"><img src="https://img.shields.io/badge/Rank%20on-Gnome--look.org-%207ca5df%20?logo=gnome&logoColor=lightgrey&labelColor=303030&color=%237fa5db" ></a>
-</p>
+<h1 align="center">Vortex Console boot splash theme</h1>
 
-Animated [Plymouth][plymouth] theme with the Ubuntu logo and a futuristic and
-elegant look.
+> This is a fork of the awesome
+> [Vortex Ubuntu Plymouth Theme](https://github.com/emanuele-scarsella/vortex-ubuntu-plymouth-theme)
+> by [@emanuele-scarsella](https://github.com/emanuele-scarsella).
 
-The splash image color wheel spins at varying speeds creating a vortex effect.
-During boot, a simple but elegant progress bar is displayed. Simultaneously, the
-Ubuntu logo spins in the opposite direction.
+---
+
+Animated Plymouth theme with a console-style appearance and
+a futuristic and elegant look.
+
+The splash image color wheel spins at varying speeds creating a vortex
+effect. Simultaneously, the logo spins in the opposite direction.
 
 Disk encryption password prompt is supported.
 
@@ -24,112 +23,135 @@ Disk encryption password prompt is supported.
 |                       Password                       |                       Question                       |
 | ![Boot splash with password animated demo][password] | ![Boot splash with question animated demo][question] |
 
-## :gear: Installation
+## ⚙️ Installation
 
-To preview the theme interactively, install the `plymouth-x11` package:
+To install the theme and set it as the default, navigate to the
+repository directory and invoke the `install` script:
 
-```shell
-sudo apt install plymouth-x11
-```
-
-To install the theme and set it as the default, navigate to the repository
-directory and invoke the `install` script:
-
-```shell
-cd path/to/vortex-ubuntu-plymouth-theme
+```bash
+cd path/to/vortex-console-plymouth-theme
 ./install
 ```
 
 `install` invokes `sudo` so you will be asked for your password.
 
-## :paintbrush: Preview / Testing
+## ✏️ Editing the theme
 
-To preview the currently active Plymouth theme, navigate to the repository
-directory and invoke the `test-plymouth` script:
+Feel free to edit the theme to your liking. You could replace images or even edit the script files.
+After editing the theme, first [install](#gear-installation) it and then [preview](#paintbrush-preview--testing) it.
 
-```shell
-cd path/to/vortex-ubuntu-plymouth-theme
+## 🖌️ Preview / Testing
+
+To preview the theme make sure you install the `plymouth-x11` package:
+
+```bash
+sudo apt install plymouth-x11
+```
+
+To preview the currently active Plymouth theme, navigate to the
+repository directory and invoke the `test` script:
+
+```bash
+cd path/to/vortex-console-plymouth-theme
 
 # Show Plymouth preview for 10 seconds
-./test-plymouth
+./test
 
 # Show Plymouth with mock password and question/answer prompts,
 # then show splash for 10 more seconds
-./test-plymouth prompt
+./test prompt
 ```
 
-`test-plymouth` invokes `sudo` so you will be asked for your password.
+`test` invokes `sudo` so you will be asked for your password.
 
-## :no_entry_sign: Removal
+## 🚫 Removal
 
-To remove the theme, navigate to the repository
-directory and invoke the `install` script with the `uninstall` argument:
+To remove the theme, navigate to the repository directory and invoke
+the `uninstall` script:
 
-```shell
-cd path/to/vortex-ubuntu-plymouth-theme
-./install uninstall
+```bash
+cd path/to/vortex-console-plymouth-theme
+./uninstall
 ```
 
-`install` invokes `sudo` so you will be asked for your password.
+`uninstall` invokes `sudo` so you will be asked for your password.
 
-The uninstallation process will prompt you to set a new theme. The default
-Plymouth theme in Ubuntu 22.04 is `bgrt`.
+The uninstallation process will prompt you to set a new theme. The
+default Plymouth theme in Ubuntu 22.04 is `bgrt`.
 
-# :wrench: Customization
+## 🔧 Customization
 
-## Console output
+### Console output
 
-By default, the theme now displays boot console messages in a semi-transparent box at the bottom of the screen. This shows all the system startup actions in real-time, similar to a traditional text boot.
+By default, the theme now displays boot console messages in a
+semi-transparent box at the bottom of the screen. This shows all the
+system startup actions in real-time, similar to a traditional text boot.
 
-To disable the console output box, edit `vortex-ubuntu/vortex-ubuntu.script` and comment out or remove the console box initialization section (lines 60-120) and the status update callback function.
+To disable the console output box, edit
+`vortex-console/vortex-console.script` and comment out or remove the
+console box initialization section (starting at line 79) and the status
+update callback function.
 
-The console box can be customized by adjusting these variables near the top of the script:
+The console box can be customized by adjusting these variables near the
+top of the script:
 
-- `console_box_height` - Height of the console box in pixels (default: 200)
+- `console_box_offset_x` - Horizontal offset from screen edges (default: 30)
+- `console_box_offset_y` - Vertical offset from screen edges (default: 30)
 - `console_box_padding` - Padding inside the box (default: 10)
-- `console_max_lines` - Maximum number of lines to display (default: 11)
-- `console_line_height` - Height of each line in pixels (default: 16)
+- `console_max_lines` - Maximum number of lines to display
+  (default: calculated based on screen height)
+- `console_line_height` - Height of each line in pixels (default: 21)
 
-You can also adjust the box opacity by changing the value in `console_box_bg.SetOpacity(0.85)` (range: 0.0 to 1.0).
+### Logo spin
 
-## Logo spin
+To disable the logo image spin, edit
+`vortex-console/vortex-console.script` and change `logo_spin = -0.009;`
+to `logo_spin = 0;` near the top.
 
-To disable the logo image spin, edit `vortex-ubuntu/vortex-ubuntu.script` and
-change `logo_spin = -0.009;` to `logo_spin = 0;` near the top.
+### Background color
 
-## Background color
+To change the background color, edit
+`vortex-console/vortex-console.script` and modify the
+`Window.SetBackgroundTopColor()` and `Window.SetBackgroundBottomColor()`
+values. The parameters are RGB values (0-1 range). For example, to set a
+dark blue background:
 
-Modify `vortex-ubuntu/bg.png` in the repository, and fill the image with your
-desired background color. After modification, reinstall the theme with
-`./install` as described above.
+```javascript
+Window.SetBackgroundTopColor(0, 0, 0.2);
+Window.SetBackgroundBottomColor(0, 0, 0.2);
+```
 
-## Background image
+Additionally, you should comment out the bg lines like this
 
-Replace `vortex-ubuntu/bg.png` in the repository with your desired background
-image. Your image must be in PNG format. After modification, reinstall the theme
-with `./install` as described above.
+```javascript
+// bg = Sprite(Image("bg.png").Scale(screen.w, screen.h));
+// bg.SetZ(0);
+```
 
-## License
+to rely solely on the script-defined background color.
 
-This project is licensed under the GNU General Public License (GPL) version 2.
-See [`LICENSE`][license] for more information.
+After modification, reinstall the theme with `./install` as described
+above.
 
-# :copyright: Acknowledgments
+### Background image
 
-- [Inspiration for aesthetic &amp; style][atom]
-- [adi1090x/plymouth-themes][adi1090x-plymouth-themes] for prompt examples
+Replace `vortex-console/bg.png` in the repository with your desired
+background image. Your image must be in PNG format. After modification,
+reinstall the theme with `./install` as described above.
 
-# :handshake: Contributions
+## 📄 License
 
-- Created by [@emanuele-scarsella](https://github.com/emanuele-scarsella)
-- Password prompt and code improvements by [@smkent](https://github.com/smkent)
-- Pausing animation during (password) prompt by [@nesono](https://github.com/nesono)
+This project is licensed under the GNU General Public License (GPL)
+version 2. See [`LICENSE`][license] for more information.
 
-[adi1090x-plymouth-themes]: https://github.com/adi1090x/plymouth-themes
-[atom]: https://atom.io
-[license]: /LICENSE
-[plymouth]: https://freedesktop.org/wiki/Software/Plymouth/
-[bootup]: images/bootup.gif
-[shutdown]: images/shutdown.gif
-[password]: images/password.gif
-[question]: images/question.gif
+## 🙏 Acknowledgments
+
+- Original theme created by
+  [@emanuele-scarsella](https://github.com/emanuele-scarsella)
+
+## 🤝 Contributions
+
+- Original repository:
+  [vortex-ubuntu-plymouth-theme](https://github.com/emanuele-scarsella/vortex-ubuntu-plymouth-theme)
+- Forked and adapted as "Vortex Console" with console-focused
+  enhancements

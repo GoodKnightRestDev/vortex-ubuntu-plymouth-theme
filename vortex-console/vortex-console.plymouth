@@ -1,0 +1,10 @@
+[Plymouth Theme]
+Name=Vortex Console
+Description=Console-style boot theme with spinning colored stripes
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/vortex-console
+ScriptFile=/usr/share/plymouth/themes/vortex-console/vortex-console.script
+UseFirmwareBackground=false
+TransitionDuration=0.5

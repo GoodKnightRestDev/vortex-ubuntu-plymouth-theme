@@ -7,7 +7,7 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 themes_dir="/usr/share/plymouth/themes"
-theme_name="vortex-ubuntu"
+theme_name="vortex-console"
 
 install() {
     if [ -d "${themes_dir}/${theme_name}" ]; then
@@ -36,21 +36,8 @@ install() {
     update-initramfs -u
 }
 
-uninstall() {
-    update-alternatives \
-        --remove \
-        default.plymouth \
-        "${themes_dir}/${theme_name}/${theme_name}.plymouth"
-    # Prompt user for a different theme
-    update-alternatives \
-        --config \
-        default.plymouth
-    update-initramfs -u
-    rm -rvf "${themes_dir:?}/${theme_name:?}/"
-}
-
 usage() {
-    echo "Usage: ${0} [uninstall]" >&2
+    echo "Usage: ${0}" >&2
     exit 1
 }
 
@@ -63,11 +50,8 @@ if [ ! -d "${themes_dir}" ]; then
     exit 1
 fi
 
-case "${1}" in
-    "")
-        install;;
-    uninstall)
-        uninstall;;
-    *)
-        usage;;
-esac
+if [ -n "${1}" ]; then
+    usage
+fi
+
+install

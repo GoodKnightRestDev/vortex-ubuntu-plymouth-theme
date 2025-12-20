@@ -17,12 +17,15 @@ if [ "${1}" = "-h" ] || [ "${1}" = "--help" ] || [ "${1}" = "help" ]; then
     usage
 fi
 
-set -x
-
 plymouthd
 trap 'plymouth quit' EXIT
 
 plymouth --show-splash
+
+# Test that "Begin" messages are filtered out
+plymouth --update="Begin: %s ..."
+sleep 0.5
+
 if [ "${1}" = "prompt" ]; then
     plymouth ask-for-password --prompt="Enter a password"
     plymouth ask-question --command=cat --prompt="Say a few words"

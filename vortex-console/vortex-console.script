@@ -1,0 +1,494 @@
+// ============================================================================
+// Vortex Console Plymouth Theme Script
+// ============================================================================
+// This script controls the visual appearance and behavior of the Plymouth
+// boot splash screen for the Vortex Ubuntu theme. It handles:
+// - Animated logo and spinning elements
+// - Password/passphrase input dialogs
+// - Boot progress display
+// - Console message output with fade effects
+// - Status updates during boot/shutdown
+// ============================================================================
+
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+
+// Logo rotation speed (negative value = counter-clockwise)
+// Value is in radians per frame (refresh callback)
+// Current: -0.009 = ~0.516 radians/sec at 60fps = ~29.5 degrees/sec
+// - Negative values rotate counter-clockwise
+// - Positive values rotate clockwise
+// - Larger absolute values = faster rotation
+// - Typical range: -0.02 to -0.005 (slow to medium speed)
+// - Adjust this value to match your desired rotation speed
+logo_spin = -0.009;
+
+// ============================================================================
+// SCREEN DIMENSIONS
+// ============================================================================
+
+// Get and store screen dimensions for positioning calculations
+screen.w = Window.GetWidth(0);
+screen.h = Window.GetHeight(0);
+screen.half.w = screen.w / 2;
+screen.half.h = screen.h / 2;
+
+// ============================================================================
+// BACKGROUND SETUP
+// ============================================================================
+
+// Set solid black background (top and bottom)
+Window.SetBackgroundTopColor(0, 0, 0);
+Window.SetBackgroundBottomColor(0, 0, 0);
+
+// Load and scale background image to fill entire screen
+// Currently just a black background, but you can replace it with your own image
+// bg = Sprite(Image("bg.png").Scale(screen.w, screen.h));
+// bg.SetZ(0);
+
+// ============================================================================
+// GLOBAL STATE VARIABLES
+// ============================================================================
+
+// Message, prompt, and response objects for user interaction
+message = null;
+prompt = null;
+response = null;
+
+// Password input bullet/dot image (scaled to 10x10 pixels)
+bullet.image = Image("dot.png").Scale(10, 10);
+
+// Calculate text height for positioning elements
+text_line_height = Image.Text("Dummy text abcxyz").GetHeight();
+
+// Y-axis positions for interactive elements (75% down screen)
+prompt_y = screen.h * 0.75;
+response_y = prompt_y + text_line_height * 2;
+message_y = prompt_y + text_line_height * 4;
+
+// ============================================================================
+// PASSWORD INPUT BOX CONFIGURATION
+// ============================================================================
+
+// Dimensions and styling for password/question input box
+password_box_width = 400;
+password_box_height = 40;
+password_box_border = 2;
+password_box = null;
+
+// ============================================================================
+// CONSOLE OUTPUT BOX CONFIGURATION
+// ============================================================================
+
+// Console box positioning and dimensions
+console_box_offset_x = 30;
+console_box_offset_y = 30;
+console_box_width = screen.w - (console_box_offset_x * 2);
+console_box_height = screen.h - (console_box_offset_y * 2);
+console_box_padding = 10;
+console_max_lines = Math.Int(screen.h / 21) - 2;
+console_line_height = 21;
+
+// Animation control variables
+time_counter = 0.0;  // Incremented each refresh for rotation calculations
+stop_animation = 0;  // Flag to pause animations (0 = playing, 1 = stopped)
+
+// ============================================================================
+// CONSOLE BACKGROUND IMAGE WITH GRADIENT
+// ============================================================================
+
+// Gradient overlay
+fade_scaled = Image("fade.png").Scale(console_box_width, screen.h);
+console_gradient = Sprite(fade_scaled);
+console_gradient.SetPosition(console_box_offset_x, 0);
+console_gradient.SetZ(3);
+
+// Initialize console line sprites array
+for (i = 0; i < console_max_lines; i++) {
+  console_lines[i] = null;
+}
+
+// ============================================================================
+// CONSOLE DISPLAY FUNCTIONS
+// ============================================================================
+
+/**
+ * Updates the console display by rendering all stored console messages.
+ * Clears existing line sprites and recreates them from the message buffer.
+ */
+fun update_console_display() {
+  // Clear existing console line sprites
+  for (i = 0; i < console_max_lines; i++) {
+    if (console_lines[i] != null) {
+      console_lines[i] = null;
+    }
+  }
+
+  // Render each console message line
+  for (i = 0; i < console_max_lines; i++) {
+    line_index = global.console_messages[i];
+    if (line_index != null) {
+      line_image = Image.Text(line_index, 0.7, 1, 0.7, 1, "Monospace 10");
+      console_lines[i] = Sprite(line_image);
+      console_lines[i].SetPosition(console_box_offset_x + console_box_padding,
+                                   console_box_offset_y + console_box_padding +
+                                       (i * console_line_height));
+      console_lines[i].SetZ(2);
+      console_lines[i].SetOpacity(1.0);
+    }
+  }
+}
+
+// Initialize console messages buffer
+for (i = 0; i < console_max_lines; i++) {
+  global.console_messages[i] = null;
+}
+
+/**
+ * Adds a new console message to the display.
+ * Messages scroll upward - newest at top, oldest at bottom.
+ *
+ * @param text The message text to display
+ */
+fun add_console_message(text) {
+  // Shift all messages down by one position
+  for (i = console_max_lines - 1; i > 0; i--) {
+    global.console_messages[i] = global.console_messages[i - 1];
+  }
+  // Add new message at the top
+  global.console_messages[0] = text;
+  update_console_display();
+}
+
+/**
+ * Callback function for Plymouth status updates.
+ * Filters out empty status messages and "Begin:" template strings.
+ *
+ * @param status The status text from Plymouth
+ */
+fun status_update_callback(status) {
+  // Filter out empty messages
+  if (status == "") return;
+
+  // Filter out "Begin:" messages
+  if (StringLength(status) >= 6) {
+    local.first_six = "";
+    for (i = 0; i < 6; i++) {
+      first_six = first_six + StringGetCharAt(status, i);
+    }
+    if (first_six == "Begin:") return;
+  }
+
+  add_console_message(status);
+}
+Plymouth.SetUpdateStatusFunction(status_update_callback);
+
+// ============================================================================
+// SPLASH SCREEN CONFIGURATION
+// ============================================================================
+
+// Scale factor for all splash elements (0.75 = 75% of original size)
+splash_scale = 0.75;
+
+// Vertical position for splash elements (40% down screen for boot, 50% for shutdown)
+splash_y_position = 0.4;
+if (Plymouth.GetMode() == "shutdown") {
+  splash_y_position = 0.5;
+}
+
+// ============================================================================
+// SPLASH SPRITE CREATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Creates a splash sprite object from an existing image.
+ *
+ * @param img Pre-loaded and scaled image
+ * @return Splash sprite object with image and sprite properties
+ */
+fun make_splash_sprite_from_image(img) {
+  local.splash_sprite.image = img;
+  local.splash_sprite.sprite =
+      make_splash_sprite_sprite(local.splash_sprite.image);
+  return local.splash_sprite;
+}
+
+/**
+ * Creates and positions a sprite from an image.
+ * Centers horizontally and positions vertically based on splash_y_position.
+ *
+ * @param img The image to create a sprite from
+ * @return Positioned sprite object
+ */
+fun make_splash_sprite_sprite(img) {
+  local.sprite = Sprite(local.img);
+  local.sprite.SetX(screen.half.w - local.img.GetWidth() / 2);
+  local.sprite.SetY((screen.h * splash_y_position) - local.img.GetHeight() / 2);
+  local.sprite.SetZ(20);
+  return local.sprite;
+}
+
+/**
+ * Loads an image from a file and creates a scaled splash sprite.
+ *
+ * @param fn Filename of the image to load
+ * @return Splash sprite object with image and sprite properties
+ */
+fun make_splash_sprite(fn) {
+  local.img = Image(local.fn);
+  local.splash_sprite.image = local.img.Scale(
+      img.GetWidth() * splash_scale, local.img.GetHeight() * splash_scale);
+  local.splash_sprite.sprite =
+      make_splash_sprite_sprite(local.splash_sprite.image);
+  return local.splash_sprite;
+}
+
+// ============================================================================
+// ANIMATED SPLASH ELEMENTS
+// ============================================================================
+
+// Rotation speeds for each of the 10 spinning elements
+// Each element rotates at a different speed to create a layered effect
+spins = [
+  0.009, 0.007, 0.006, 0.0053, 0.0048, 0.004, 0.0035, 0.003, 0.0025, 0.002
+];
+spin_sprite_count = 10;
+
+// Load and create the central logo sprite
+logo_image = Image("logo.png").Scale(120 * splash_scale, 120 * splash_scale);
+logo_sprite = make_splash_sprite_from_image(logo_image);
+
+// Load and create the static background element
+splash_static_bg_image = Image("static.png");
+splash_static_bg_image = splash_static_bg_image.Scale(
+    splash_static_bg_image.GetWidth() * splash_scale * 0.3,
+    splash_static_bg_image.GetHeight() * splash_scale * 0.3);
+splash_static_bg = make_splash_sprite_from_image(splash_static_bg_image);
+
+// Load all 10 spinning layer images (1.png through 10.png)
+for (i = 0; i < spin_sprite_count; i++) {
+  splash_sprites[i] = make_splash_sprite((i + 1) + ".png");
+}
+
+/**
+ * Rotates a splash sprite by the specified angle.
+ *
+ * @param splash_sprite The splash sprite object to rotate
+ * @param rotation Rotation angle in radians
+ */
+fun rotate_splash_sprite(splash_sprite, rotation) {
+  splash_sprite.sprite.SetImage(splash_sprite.image.Rotate(rotation));
+}
+
+/**
+ * Updates all splash sprite rotations based on current time counter.
+ * Only animates when stop_animation flag is not set.
+ */
+fun update_splash_sprites() {
+  if (stop_animation == 0) {
+    rotate_splash_sprite(logo_sprite, time_counter * logo_spin);
+    for (i = 0; i < spin_sprite_count; i++) {
+      rotate_splash_sprite(splash_sprites[i], time_counter * spins[i]);
+    }
+  }
+}
+
+// ============================================================================
+// PLYMOUTH CALLBACK FUNCTIONS
+// ============================================================================
+
+/**
+ * Refresh callback - called on each frame update.
+ * Increments time counter and updates sprite animations.
+ */
+fun refresh_callback() {
+  time_counter++;
+  update_splash_sprites();
+}
+Plymouth.SetRefreshFunction(refresh_callback);
+
+// ============================================================================
+// BOOT PROGRESS BAR
+// ============================================================================
+
+// Only show progress bar during boot (not shutdown)
+if (Plymouth.GetMode() == "boot") {
+  ipb = Image("pb.png");
+  pb = Sprite(ipb);
+  pb.SetX(screen.half.w - 50);
+  pb.SetY(screen.h * 0.6 - ipb.GetHeight() / 2);
+  pb.SetZ(20);
+
+  /**
+   * Boot progress callback - updates progress bar width.
+   *
+   * @param duration Total expected boot duration
+   * @param progress Current progress (0.0 to 1.0)
+   */
+  fun boot_progress_callback(duration, progress) {
+    pb.SetImage(ipb.Scale(progress * 100, 3));
+  }
+  Plymouth.SetBootProgressFunction(boot_progress_callback);
+}
+
+// ============================================================================
+// PROMPT AND INPUT DISPLAY FUNCTIONS
+// ============================================================================
+
+/**
+ * Displays a prompt message, cleaning any format specifiers.
+ * Centers the text horizontally at the prompt_y position.
+ *
+ * @param prompt_text The prompt text to display (may contain % format codes)
+ */
+fun display_prompt(prompt_text) {
+  // Remove % format specifiers from the prompt text
+  cleaned_text = "";
+  i = 0;
+  while (i < StringLength(prompt_text)) {
+    c = StringGetCharAt(prompt_text, i);
+    if (c == "%") {
+      i = i + 2;
+    } else {
+      cleaned_text = cleaned_text + c;
+      i = i + 1;
+    }
+  }
+
+  prompt.image = Image.Text(cleaned_text, 1, 1, 1);
+  prompt.sprite = Sprite(prompt.image);
+  prompt.sprite.SetX(screen.half.w - prompt.image.GetWidth() / 2);
+  prompt.sprite.SetY(prompt_y);
+  prompt.sprite.SetZ(20);
+}
+
+/**
+ * Callback for displaying a question prompt with text input.
+ * Stops animations and shows an input box with the user's response.
+ *
+ * @param prompt_text The question to ask the user
+ * @param entry The current text entry (or empty string)
+ */
+fun display_question_callback(prompt_text, entry) {
+  stop_animation = 1;
+  display_prompt(prompt_text);
+
+  // Create input box with dark grey border
+  box_image = Image(password_box_width, password_box_height);
+  // Fill with dark grey background
+  for (x = 0; x < password_box_width; x++) {
+    for (y = 0; y < password_box_height; y++) {
+      // Border pixels (darker grey)
+      if (x < password_box_border || x >= password_box_width - password_box_border ||
+          y < password_box_border || y >= password_box_height - password_box_border) {
+        box_image.SetPixel(x, y, 0.2, 0.2, 0.2, 1.0);
+      } else {
+        // Inner area (slightly lighter grey)
+        box_image.SetPixel(x, y, 0.15, 0.15, 0.15, 1.0);
+      }
+    }
+  }
+  password_box.sprite = Sprite(box_image);
+  password_box.sprite.SetX(screen.half.w - password_box_width / 2);
+  password_box.sprite.SetY(response_y - (password_box_height - text_line_height) / 2);
+  password_box.sprite.SetZ(19);
+
+  // Configure entry text appearance (show placeholder if empty)
+  local.entry_config.alpha = 1.0;
+  local.entry_config.font = "Sans Bold 12";
+  if (entry == "") {
+    entry = "Type your response";
+    local.entry_config.alpha = 0.5;
+    local.entry_config.font = "Sans 12";
+  }
+
+  response = null;
+  response.image = Image.Text(entry, 1, 1, 1, local.entry_config.alpha,
+                              local.entry_config.font);
+  response.sprite = Sprite(response.image);
+  response.sprite.SetX(screen.half.w - response.image.GetWidth() / 2);
+  response.sprite.SetY(response_y);
+  response.sprite.SetZ(20);
+}
+Plymouth.SetDisplayQuestionFunction(display_question_callback);
+
+/**
+ * Callback for displaying password prompt with bullet dots.
+ * Shows dots for each character entered, or placeholder text if empty.
+ *
+ * @param prompt_text The password prompt text
+ * @param dot_count Number of characters entered (dots to display)
+ */
+fun display_password_callback(prompt_text, dot_count) {
+  stop_animation = 0;
+  display_prompt(prompt_text);
+
+  // Create password input box with dark grey border
+  box_image = Image(password_box_width, password_box_height);
+  // Fill with dark grey background
+  for (x = 0; x < password_box_width; x++) {
+    for (y = 0; y < password_box_height; y++) {
+      // Border pixels (darker grey)
+      if (x < password_box_border || x >= password_box_width - password_box_border ||
+          y < password_box_border || y >= password_box_height - password_box_border) {
+        box_image.SetPixel(x, y, 0.2, 0.2, 0.2, 1.0);
+      } else {
+        // Inner area (slightly lighter grey)
+        box_image.SetPixel(x, y, 0.15, 0.15, 0.15, 1.0);
+      }
+    }
+  }
+  password_box.sprite = Sprite(box_image);
+  password_box.sprite.SetX(screen.half.w - password_box_width / 2);
+  password_box.sprite.SetY(response_y - (password_box_height - text_line_height) / 2);
+  password_box.sprite.SetZ(19);
+
+  // Display dots for each password character, or placeholder text if empty
+  response = null;
+  if (dot_count > 0) {
+    dot_start_position =
+        screen.half.w - (dot_count * bullet.image.GetWidth()) / 2;
+    for (i = 0; i < dot_count; i++) {
+      response[i].sprite = Sprite(bullet.image);
+      response[i].sprite.SetX(dot_start_position + i * bullet.image.GetWidth());
+      response[i].sprite.SetY(
+          response_y + (text_line_height - bullet.image.GetHeight()) / 2);
+      response[i].sprite.SetZ(20);
+    }
+  } else {
+    response.image = Image.Text("Enter passphrase", 1, 1, 1, 0.5);
+    response.sprite = Sprite(response.image);
+    response.sprite.SetX(screen.half.w - response.image.GetWidth() / 2);
+    response.sprite.SetY(response_y);
+    response.sprite.SetZ(20);
+  }
+}
+Plymouth.SetDisplayPasswordFunction(display_password_callback);
+
+/**
+ * Callback to return to normal display mode.
+ * Clears all prompts, messages, and input boxes, and resumes animations.
+ */
+fun display_normal_callback() {
+  prompt = null;
+  message = null;
+  response = null;
+  password_box = null;
+  stop_animation = 0;
+}
+Plymouth.SetDisplayNormalFunction(display_normal_callback);
+
+/**
+ * Callback to display a general message to the user.
+ *
+ * @param text The message text to display
+ */
+fun message_callback(text) {
+  message.image = Image.Text(text, 1, 1, 1, 0.75, "Sans 10");
+  message.sprite = Sprite(message.image);
+  message.sprite.SetPosition(screen.half.w - message.image.GetWidth() / 2,
+                             message_y);
+  message.sprite.SetZ(20);
+}
+Plymouth.SetMessageFunction(message_callback);
