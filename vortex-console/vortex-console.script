@@ -91,8 +91,8 @@ console_max_lines = Math.Int(screen.h / 21) - 2;
 console_line_height = 21;
 
 // Animation control variables
-time_counter = 0.0;  // Incremented each refresh for rotation calculations
-stop_animation = 0;  // Flag to pause animations (0 = playing, 1 = stopped)
+time_counter = 0.0; // Incremented each refresh for rotation calculations
+stop_animation = 0; // Flag to pause animations (0 = playing, 1 = stopped)
 
 // ============================================================================
 // CONSOLE BACKGROUND IMAGE WITH GRADIENT
@@ -169,7 +169,8 @@ fun add_console_message(text) {
  */
 fun status_update_callback(status) {
   // Filter out empty messages
-  if (status == "") return;
+  if (status == "")
+    return;
 
   // Filter out "Begin:" messages
   if (StringLength(status) >= 6) {
@@ -177,7 +178,8 @@ fun status_update_callback(status) {
     for (i = 0; i < 6; i++) {
       first_six = first_six + StringGetCharAt(status, i);
     }
-    if (first_six == "Begin:") return;
+    if (first_six == "Begin:")
+      return;
   }
 
   add_console_message(status);
@@ -191,7 +193,8 @@ Plymouth.SetUpdateStatusFunction(status_update_callback);
 // Scale factor for all splash elements (0.75 = 75% of original size)
 splash_scale = 0.75;
 
-// Vertical position for splash elements (40% down screen for boot, 50% for shutdown)
+// Vertical position for splash elements (40% down screen for boot, 50% for
+// shutdown)
 splash_y_position = 0.4;
 if (Plymouth.GetMode() == "shutdown") {
   splash_y_position = 0.5;
@@ -380,8 +383,10 @@ fun display_question_callback(prompt_text, entry) {
   for (x = 0; x < password_box_width; x++) {
     for (y = 0; y < password_box_height; y++) {
       // Border pixels (darker grey)
-      if (x < password_box_border || x >= password_box_width - password_box_border ||
-          y < password_box_border || y >= password_box_height - password_box_border) {
+      if (x < password_box_border ||
+          x >= password_box_width - password_box_border ||
+          y < password_box_border ||
+          y >= password_box_height - password_box_border) {
         box_image.SetPixel(x, y, 0.2, 0.2, 0.2, 1.0);
       } else {
         // Inner area (slightly lighter grey)
@@ -391,7 +396,8 @@ fun display_question_callback(prompt_text, entry) {
   }
   password_box.sprite = Sprite(box_image);
   password_box.sprite.SetX(screen.half.w - password_box_width / 2);
-  password_box.sprite.SetY(response_y - (password_box_height - text_line_height) / 2);
+  password_box.sprite.SetY(response_y -
+                           (password_box_height - text_line_height) / 2);
   password_box.sprite.SetZ(19);
 
   // Configure entry text appearance (show placeholder if empty)
@@ -430,8 +436,10 @@ fun display_password_callback(prompt_text, dot_count) {
   for (x = 0; x < password_box_width; x++) {
     for (y = 0; y < password_box_height; y++) {
       // Border pixels (darker grey)
-      if (x < password_box_border || x >= password_box_width - password_box_border ||
-          y < password_box_border || y >= password_box_height - password_box_border) {
+      if (x < password_box_border ||
+          x >= password_box_width - password_box_border ||
+          y < password_box_border ||
+          y >= password_box_height - password_box_border) {
         box_image.SetPixel(x, y, 0.2, 0.2, 0.2, 1.0);
       } else {
         // Inner area (slightly lighter grey)
@@ -441,7 +449,8 @@ fun display_password_callback(prompt_text, dot_count) {
   }
   password_box.sprite = Sprite(box_image);
   password_box.sprite.SetX(screen.half.w - password_box_width / 2);
-  password_box.sprite.SetY(response_y - (password_box_height - text_line_height) / 2);
+  password_box.sprite.SetY(response_y -
+                           (password_box_height - text_line_height) / 2);
   password_box.sprite.SetZ(19);
 
   // Display dots for each password character, or placeholder text if empty
