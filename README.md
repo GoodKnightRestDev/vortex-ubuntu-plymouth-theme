@@ -29,7 +29,7 @@ To install the theme and set it as the default, navigate to the
 repository directory and invoke the `install` script:
 
 ```bash
-cd path/to/vortex-console-plymouth-theme
+cd path/to/vortex-console
 ./install
 ```
 
@@ -52,7 +52,7 @@ To preview the currently active Plymouth theme, navigate to the
 repository directory and invoke the `test` script:
 
 ```bash
-cd path/to/vortex-console-plymouth-theme
+cd path/to/vortex-console
 
 # Show Plymouth preview for 10 seconds
 ./test
@@ -70,7 +70,7 @@ To remove the theme, navigate to the repository directory and invoke
 the `uninstall` script:
 
 ```bash
-cd path/to/vortex-console-plymouth-theme
+cd path/to/vortex-console
 ./uninstall
 ```
 
@@ -121,23 +121,8 @@ Window.SetBackgroundTopColor(0, 0, 0.2);
 Window.SetBackgroundBottomColor(0, 0, 0.2);
 ```
 
-Additionally, you should comment out the bg lines like this
-
-```javascript
-// bg = Sprite(Image("bg.png").Scale(screen.w, screen.h));
-// bg.SetZ(0);
-```
-
-to rely solely on the script-defined background color.
-
 After modification, reinstall the theme with `./install` as described
 above.
-
-### Background image
-
-Replace `vortex-console/bg.png` in the repository with your desired
-background image. Your image must be in PNG format. After modification,
-reinstall the theme with `./install` as described above.
 
 ## 📄 License
 

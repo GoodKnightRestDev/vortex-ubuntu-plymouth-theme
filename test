@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
@@ -27,8 +27,8 @@ plymouth --update="Begin: %s ..."
 sleep 0.5
 
 if [ "${1}" = "prompt" ]; then
-    plymouth ask-for-password --prompt="Enter a password"
-    plymouth ask-question --command=cat --prompt="Say a few words"
+    echo "test_password" | timeout 3 plymouth ask-for-password --prompt="Enter a password" || true
+    echo "test response" | timeout 3 plymouth ask-question --command=cat --prompt="Say a few words" || true
 fi
 plymouth display-message \
     --text="Sample status or error text for display to the user"

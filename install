@@ -25,13 +25,13 @@ install() {
         --install \
         "${themes_dir}/default.plymouth" \
         default.plymouth \
-        "${themes_dir}/${theme_name}/${theme_name}.plymouth" \
+        "${themes_dir}/vortex-console/vortex-console.plymouth" \
         100
 
     update-alternatives \
         --set \
         default.plymouth \
-        "${themes_dir}/${theme_name}/${theme_name}.plymouth"
+        "${themes_dir}/vortex-console/vortex-console.plymouth"
 
     update-initramfs -u
 }

@@ -42,11 +42,6 @@ screen.half.h = screen.h / 2;
 Window.SetBackgroundTopColor(0, 0, 0);
 Window.SetBackgroundBottomColor(0, 0, 0);
 
-// Load and scale background image to fill entire screen
-// Currently just a black background, but you can replace it with your own image
-// bg = Sprite(Image("bg.png").Scale(screen.w, screen.h));
-// bg.SetZ(0);
-
 // ============================================================================
 // GLOBAL STATE VARIABLES
 // ============================================================================
@@ -72,7 +67,7 @@ message_y = prompt_y + text_line_height * 4;
 // ============================================================================
 
 // Dimensions and styling for password/question input box
-password_box_width = 400;
+password_box_width = 200;
 password_box_height = 40;
 password_box_border = 2;
 password_box = null;
@@ -99,7 +94,7 @@ stop_animation = 0; // Flag to pause animations (0 = playing, 1 = stopped)
 // ============================================================================
 
 // Gradient overlay
-fade_scaled = Image("fade.png").Scale(console_box_width, screen.h);
+fade_scaled = Image("fade.png").Scale(screen.w, screen.h);
 console_gradient = Sprite(fade_scaled);
 console_gradient.SetPosition(console_box_offset_x, 0);
 console_gradient.SetZ(3);
@@ -108,6 +103,10 @@ console_gradient.SetZ(3);
 for (i = 0; i < console_max_lines; i++) {
   console_lines[i] = null;
 }
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
 
 // ============================================================================
 // CONSOLE DISPLAY FUNCTIONS
@@ -129,7 +128,7 @@ fun update_console_display() {
   for (i = 0; i < console_max_lines; i++) {
     line_index = global.console_messages[i];
     if (line_index != null) {
-      line_image = Image.Text(line_index, 0.7, 1, 0.7, 1, "Monospace 10");
+      line_image = Image.Text(line_index, 0, 1, 0, 1, "Monospace 10");
       console_lines[i] = Sprite(line_image);
       console_lines[i].SetPosition(console_box_offset_x + console_box_padding,
                                    console_box_offset_y + console_box_padding +
@@ -312,30 +311,6 @@ fun refresh_callback() {
 Plymouth.SetRefreshFunction(refresh_callback);
 
 // ============================================================================
-// BOOT PROGRESS BAR
-// ============================================================================
-
-// Only show progress bar during boot (not shutdown)
-if (Plymouth.GetMode() == "boot") {
-  ipb = Image("pb.png");
-  pb = Sprite(ipb);
-  pb.SetX(screen.half.w - 50);
-  pb.SetY(screen.h * 0.6 - ipb.GetHeight() / 2);
-  pb.SetZ(20);
-
-  /**
-   * Boot progress callback - updates progress bar width.
-   *
-   * @param duration Total expected boot duration
-   * @param progress Current progress (0.0 to 1.0)
-   */
-  fun boot_progress_callback(duration, progress) {
-    pb.SetImage(ipb.Scale(progress * 100, 3));
-  }
-  Plymouth.SetBootProgressFunction(boot_progress_callback);
-}
-
-// ============================================================================
 // PROMPT AND INPUT DISPLAY FUNCTIONS
 // ============================================================================
 
@@ -377,28 +352,19 @@ fun display_question_callback(prompt_text, entry) {
   stop_animation = 1;
   display_prompt(prompt_text);
 
-  // Create input box with dark grey border
-  box_image = Image(password_box_width, password_box_height);
-  // Fill with dark grey background
-  for (x = 0; x < password_box_width; x++) {
-    for (y = 0; y < password_box_height; y++) {
-      // Border pixels (darker grey)
-      if (x < password_box_border ||
-          x >= password_box_width - password_box_border ||
-          y < password_box_border ||
-          y >= password_box_height - password_box_border) {
-        box_image.SetPixel(x, y, 0.2, 0.2, 0.2, 1.0);
-      } else {
-        // Inner area (slightly lighter grey)
-        box_image.SetPixel(x, y, 0.15, 0.15, 0.15, 1.0);
-      }
-    }
-  }
-  password_box.sprite = Sprite(box_image);
-  password_box.sprite.SetX(screen.half.w - password_box_width / 2);
-  password_box.sprite.SetY(response_y -
-                           (password_box_height - text_line_height) / 2);
-  password_box.sprite.SetZ(19);
+  // Create input box with bright border using scaled colored images
+  box_x = screen.half.w - password_box_width / 2;
+  box_y = response_y - (password_box_height - text_line_height) / 2;
+  border_width = 1;
+
+  // Background box (using grey.png scaled as dark background)
+  password_box.bg_sprite =
+      Sprite(Image("grey.png")
+                 .Scale(password_box_width - border_width * 2,
+                        password_box_height - border_width * 2));
+  password_box.bg_sprite.SetX(box_x + border_width);
+  password_box.bg_sprite.SetY(box_y + border_width);
+  password_box.bg_sprite.SetZ(19);
 
   // Configure entry text appearance (show placeholder if empty)
   local.entry_config.alpha = 1.0;
@@ -440,10 +406,10 @@ fun display_password_callback(prompt_text, dot_count) {
           x >= password_box_width - password_box_border ||
           y < password_box_border ||
           y >= password_box_height - password_box_border) {
-        box_image.SetPixel(x, y, 0.2, 0.2, 0.2, 1.0);
+        box_image.SetPixel(x, y, 0.0, 0.4, 0.0, 1.0);
       } else {
         // Inner area (slightly lighter grey)
-        box_image.SetPixel(x, y, 0.15, 0.15, 0.15, 1.0);
+        box_image.SetPixel(x, y, 0.0, 0.6, 0.0, 1.0);
       }
     }
   }
@@ -466,7 +432,7 @@ fun display_password_callback(prompt_text, dot_count) {
       response[i].sprite.SetZ(20);
     }
   } else {
-    response.image = Image.Text("Enter passphrase", 1, 1, 1, 0.5);
+    response.image = Image.Text("", 1, 1, 1, 0.5);
     response.sprite = Sprite(response.image);
     response.sprite.SetX(screen.half.w - response.image.GetWidth() / 2);
     response.sprite.SetY(response_y);
